@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: swe645-hw2-container
-          image: anakka5/hw2:first
+          image: anakka5/hw2:{{IMAGE_TAG}}
           imagePullPolicy: Always
           ports:
             - containerPort: 80
