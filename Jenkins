@@ -2,8 +2,8 @@ pipeline {
     agent any
     
     environment {
-        DOCKER_HUB_CREDENTIALS = credentials('docker-creds') // Docker Hub credentials ID in Jenkins
-        KUBECONFIG = credentials('Kubeconfig')         // Kubeconfig credentials ID in Jenkins
+        DOCKER_HUB_CREDENTIALS = credentials('docker-creds')   // Docker Hub credentials ID in Jenkins
+        KUBECONFIG = credentials('Kubeconfig')                 // Updated kubeconfig credentials ID
         dockerImage = ''
     }
 
@@ -11,9 +11,12 @@ pipeline {
         stage('Build the image') {
             steps {
                 script {
-                    checkout scm
-                    // Build the Docker image and tag it with the build number
-                    sh 'docker build -t anakka5/hw2:${BUILD_NUMBER} .'  
+                    // Remove existing directory if it exists
+                    sh 'rm -rf HW2_repository'
+                    // Clone the repository
+                    sh 'git clone https://github.com/AKHILNAKKA5/HW2_repository.git'
+                    // Change to the HW2_repository directory
+                    sh 'cd HW2_repository && docker build -t anakka5/hw2:${BUILD_NUMBER} .'
                 }
             }
         }
@@ -21,19 +24,18 @@ pipeline {
         stage('Push to Docker Hub') {
             steps {
                 script {
-                    // Login to Docker Hub using credentials stored in Jenkins
                     sh "docker login -u $DOCKER_HUB_CREDENTIALS_USR -p $DOCKER_HUB_CREDENTIALS_PSW"
-                    // Push the image to Docker Hub
-                    sh 'docker push anakka5/hw2:${BUILD_NUMBER}'                  }
+                    sh 'docker push anakka5/hw2:${BUILD_NUMBER}'
+                }
             }
         }
 
         stage('Update Deployment File') {
             steps {
                 script {
-                    // Directly modify the deployment.yaml file to set the correct image tag
                     def tag = currentBuild.number
-                    sh "sed -i 's|image: anakka5/hw2:.*|image: anakka5/hw2:${tag}|' deployment.yaml"
+                    // Update image tag in deployment.yaml
+                    sh "sed -i 's|image: anakka5/hw2:.*|image: anakka5/hw2:${tag}|' HW2_repository/deployment.yaml"
                 }
             }
         }
@@ -41,10 +43,10 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    withCredentials([file(credentialsId: 'kube-config-cred', variable: 'KUBECONFIG')]) {
-                        // Apply the updated deployment and service configurations to Kubernetes
-                        sh 'kubectl --kubeconfig=$KUBECONFIG apply -f deployment.yaml'
-                        sh 'kubectl --kubeconfig=$KUBECONFIG apply -f service.yaml'
+                    // Use Kubeconfig credentials to deploy to Kubernetes
+                    withCredentials([file(credentialsId: 'Kubeconfig', variable: 'KUBECONFIG')]) {
+                        sh 'kubectl --kubeconfig=$KUBECONFIG apply -f HW2_repository/deployment.yaml'
+                        sh 'kubectl --kubeconfig=$KUBECONFIG apply -f HW2_repository/service.yaml'
                     }
                 }
             }
