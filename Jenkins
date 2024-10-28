@@ -2,8 +2,8 @@ pipeline {
     agent any
     
     environment {
-        DOCKER_HUB_CREDENTIALS = credentials('docker-creds')   // Docker Hub credentials ID in Jenkins
-        KUBECONFIG = credentials('Kubeconfig')                 // Updated kubeconfig credentials ID
+        DOCKER_HUB_CREDENTIALS = credentials('docker-creds')   
+        KUBECONFIG = credentials('Kubeconfig')                 
         dockerImage = ''
     }
 
